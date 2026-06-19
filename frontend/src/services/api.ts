@@ -81,12 +81,12 @@ export const trafficApi = {
     return response.data;
   },
   
-  analyzeCrowd: async (payload: { event_id: string; base_congestion: string; priority: string; requires_road_closure: boolean; file: File }) => {
+  analyzeCrowd: async (payload: { event_id: string; base_congestion?: string; priority?: string; requires_road_closure?: boolean; file: File }) => {
     const formData = new FormData();
     formData.append('event_id', payload.event_id);
-    formData.append('base_congestion', payload.base_congestion);
-    formData.append('priority', payload.priority);
-    formData.append('requires_road_closure', String(payload.requires_road_closure));
+    formData.append('base_congestion', payload.base_congestion || '');
+    formData.append('priority', payload.priority || '');
+    formData.append('requires_road_closure', payload.requires_road_closure !== undefined && payload.requires_road_closure !== null ? String(payload.requires_road_closure) : '');
     formData.append('file', payload.file);
     
     const response = await api.post('/traffic/analyze-crowd', formData, {
@@ -137,17 +137,17 @@ export const trafficApi = {
 
   analyzeVideo: async (payload: {
     event_id: string;
-    base_congestion: string;
-    priority: string;
-    requires_road_closure: boolean;
+    base_congestion?: string;
+    priority?: string;
+    requires_road_closure?: boolean;
     sample_every?: number;
     file: File;
   }) => {
     const formData = new FormData();
     formData.append('event_id', payload.event_id);
-    formData.append('base_congestion', payload.base_congestion);
-    formData.append('priority', payload.priority);
-    formData.append('requires_road_closure', String(payload.requires_road_closure));
+    formData.append('base_congestion', payload.base_congestion || '');
+    formData.append('priority', payload.priority || '');
+    formData.append('requires_road_closure', payload.requires_road_closure !== undefined && payload.requires_road_closure !== null ? String(payload.requires_road_closure) : '');
     formData.append('sample_every', String(payload.sample_every || 3));
     formData.append('file', payload.file);
 
@@ -209,11 +209,19 @@ export function connectVideoWs(
   onMessage: (data: any) => void,
   onClose?: () => void,
   onError?: (err: Event) => void,
-  junction?: string
+  junction?: string,
+  baseCongestion?: string,
+  priority?: string,
+  closure?: boolean
 ) {
-  const path = `/traffic/ws/video-analysis${
-    junction ? `?junction=${encodeURIComponent(junction)}` : ''
-  }`;
+  const params = new URLSearchParams();
+  if (junction) params.append('junction', junction);
+  if (baseCongestion) params.append('base_congestion', baseCongestion);
+  if (priority) params.append('priority', priority);
+  if (closure !== undefined) params.append('requires_road_closure', String(closure));
+
+  const queryString = params.toString();
+  const path = `/traffic/ws/video-analysis${queryString ? `?${queryString}` : ''}`;
   const wsUrl = getWsUrl(path);
   const socket = new WebSocket(wsUrl);
 

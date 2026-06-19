@@ -63,9 +63,9 @@ async def websocket_video_analysis(websocket: WebSocket):
 
     # Retrieve query parameters for dynamic resource logic
     junction = websocket.query_params.get("junction", "SilkBoardJunc")
-    base_congestion = websocket.query_params.get("base_congestion", "Medium")
-    priority = websocket.query_params.get("priority", "High")
-    requires_road_closure = websocket.query_params.get("requires_road_closure", "true").lower() == "true"
+    base_congestion_raw = websocket.query_params.get("base_congestion")
+    priority_raw = websocket.query_params.get("priority")
+    requires_road_closure_raw = websocket.query_params.get("requires_road_closure")
 
     await websocket.accept()
     tmp_path = None
@@ -108,12 +108,31 @@ async def websocket_video_analysis(websocket: WebSocket):
                 if isinstance(result, Exception):
                     raise result
 
+                # Determine parameters dynamically if not provided
+                def is_empty(val):
+                    if val is None:
+                        return True
+                    if isinstance(val, str) and (not val.strip() or val.lower() in ('none', 'null', 'undefined')):
+                        return True
+                    return False
+
+                ai_priority = priority_raw if not is_empty(priority_raw) else (
+                    "High" if result["headcount"] >= 50 else ("Medium" if result["headcount"] >= 15 else "Low")
+                )
+                if is_empty(requires_road_closure_raw):
+                    ai_closure = True if result["headcount"] >= 80 else False
+                else:
+                    ai_closure = requires_road_closure_raw.lower() == 'true'
+                ai_congestion = base_congestion_raw if not is_empty(base_congestion_raw) else (
+                    "High" if result["headcount"] >= 50 else ("Medium" if result["headcount"] >= 15 else "Low")
+                )
+
                 # Calculate barricades recommendations based on current frame headcount
                 resources = crowd_service.update_resources(
-                    base_congestion=base_congestion,
+                    base_congestion=ai_congestion,
                     crowd_count=result["headcount"],
-                    priority=priority,
-                    requires_road_closure=requires_road_closure
+                    priority=ai_priority,
+                    requires_road_closure=ai_closure
                 )
 
                 payload = {
@@ -138,11 +157,30 @@ async def websocket_video_analysis(websocket: WebSocket):
                 # Include summary on last message
                 if result["is_last"] and "summary" in result:
                     avg = result["summary"].get("average_headcount", 0)
+                    
+                    def is_empty(val):
+                        if val is None:
+                            return True
+                        if isinstance(val, str) and (not val.strip() or val.lower() in ('none', 'null', 'undefined')):
+                            return True
+                        return False
+
+                    ai_priority_summary = priority_raw if not is_empty(priority_raw) else (
+                        "High" if avg >= 50 else ("Medium" if avg >= 15 else "Low")
+                    )
+                    if is_empty(requires_road_closure_raw):
+                        ai_closure_summary = True if avg >= 80 else False
+                    else:
+                        ai_closure_summary = requires_road_closure_raw.lower() == 'true'
+                    ai_congestion_summary = base_congestion_raw if not is_empty(base_congestion_raw) else (
+                        "High" if avg >= 50 else ("Medium" if avg >= 15 else "Low")
+                    )
+
                     summary_resources = crowd_service.update_resources(
-                        base_congestion=base_congestion,
+                        base_congestion=ai_congestion_summary,
                         crowd_count=avg,
-                        priority=priority,
-                        requires_road_closure=requires_road_closure
+                        priority=ai_priority_summary,
+                        requires_road_closure=ai_closure_summary
                     )
                     result["summary"]["barricades_recommended"] = summary_resources["barricades_recommended"]
                     result["summary"]["police_recommended"] = summary_resources["police_recommended"]

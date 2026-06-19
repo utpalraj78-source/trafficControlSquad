@@ -139,9 +139,9 @@ def suggest_diversion(
 @router.post("/analyze-crowd", response_model=schemas.CrowdAnalysisResponse)
 def analyze_crowd(
     event_id: str = Form(...),
-    base_congestion: str = Form(...),
-    priority: str = Form(...),
-    requires_road_closure: bool = Form(...),
+    base_congestion: Optional[str] = Form(None),
+    priority: Optional[str] = Form(None),
+    requires_road_closure: Optional[bool] = Form(None),
     file: UploadFile = File(...),
     db: Session = Depends(deps.get_db),
     current_user: models.User = Depends(deps.get_current_user)
@@ -150,6 +150,40 @@ def analyze_crowd(
     Accepts CCTV snapshots and executes YOLO + SAHI inference for crowd density tracking.
     Recalculates deployment demands based on density feedback and logs results.
     """
+    # Read image contents
+    contents = file.file.read()
+    
+    # Process through YOLO detector
+    annotated_bytes, crowd_count = crowd_service.detect_image_bytes(contents)
+    
+    # Base64 encode the annotated image
+    import base64
+    annotated_base64 = base64.b64encode(annotated_bytes).decode('utf-8')
+    
+    # AI decides parameters automatically from the headcount if not provided by operator
+    def is_empty(val):
+        if val is None:
+            return True
+        if isinstance(val, str) and (not val.strip() or val.lower() in ('none', 'null', 'undefined')):
+            return True
+        return False
+
+    ai_priority = priority if not is_empty(priority) else (
+        "High" if crowd_count >= 50 else ("Medium" if crowd_count >= 15 else "Low")
+    )
+    
+    if is_empty(requires_road_closure):
+        ai_closure = True if crowd_count >= 80 else False
+    else:
+        if isinstance(requires_road_closure, str):
+            ai_closure = requires_road_closure.lower() == 'true'
+        else:
+            ai_closure = bool(requires_road_closure)
+
+    ai_congestion = base_congestion if not is_empty(base_congestion) else (
+        "High" if crowd_count >= 50 else ("Medium" if crowd_count >= 15 else "Low")
+    )
+
     event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
     if not event:
         # Auto-create the event so crowd analysis can always proceed and trigger dispatch
@@ -158,8 +192,8 @@ def analyze_crowd(
             event_id=event_id,
             event_type="Crowd Gathering",
             event_cause="CCTV Image Upload",
-            priority=priority,
-            requires_road_closure=requires_road_closure,
+            priority=ai_priority,
+            requires_road_closure=ai_closure,
             hour=_dt.datetime.now().hour,
             day_of_week=_dt.datetime.now().weekday(),
             duration_hours=1.0,
@@ -174,19 +208,9 @@ def analyze_crowd(
         db.commit()
         db.refresh(event)
 
-    # Read image contents
-    contents = file.file.read()
-    
-    # Process through YOLO detector
-    annotated_bytes, crowd_count = crowd_service.detect_image_bytes(contents)
-    
-    # Base64 encode the annotated image
-    import base64
-    annotated_base64 = base64.b64encode(annotated_bytes).decode('utf-8')
-    
     # Retrieve dynamic resource scaling configs
     analysis = crowd_service.update_resources(
-        base_congestion, crowd_count, priority, requires_road_closure
+        ai_congestion, crowd_count, ai_priority, ai_closure
     )
 
     # Log to PostgreSQL
@@ -227,9 +251,9 @@ def analyze_crowd(
 @router.post("/analyze-video", response_model=schemas.VideoAnalysisResponse)
 def analyze_video(
     event_id: str = Form(...),
-    base_congestion: str = Form("Medium"),
-    priority: str = Form("High"),
-    requires_road_closure: bool = Form(False),
+    base_congestion: Optional[str] = Form(None),
+    priority: Optional[str] = Form(None),
+    requires_road_closure: Optional[bool] = Form(None),
     sample_every: int = Form(-1),
     file: UploadFile = File(...),
     db: Session = Depends(deps.get_db),
@@ -241,30 +265,6 @@ def analyze_video(
     """
     import tempfile
     import os
-
-    # Find or auto-create event so video analysis always triggers dispatch
-    event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
-    if not event:
-        import datetime as _dt
-        event = models.Event(
-            event_id=event_id,
-            event_type="Crowd Gathering",
-            event_cause="CCTV Video Upload",
-            priority=priority,
-            requires_road_closure=requires_road_closure,
-            hour=_dt.datetime.now().hour,
-            day_of_week=_dt.datetime.now().weekday(),
-            duration_hours=1.0,
-            zone="Central",
-            junction="Camera Feed",
-            latitude=12.9716,
-            longitude=77.5946,
-            description=f"Auto-created from crowd video analysis at {_dt.datetime.now().strftime('%Y-%m-%d %H:%M')}",
-            status="active"
-        )
-        db.add(event)
-        db.commit()
-        db.refresh(event)
 
     # Save uploaded video to temp file
     suffix = os.path.splitext(file.filename or "video.mp4")[1]
@@ -280,9 +280,57 @@ def analyze_video(
 
         avg_count = summary.get("average_headcount", 0)
 
+        # AI decides parameters automatically if not provided
+        def is_empty(val):
+            if val is None:
+                return True
+            if isinstance(val, str) and (not val.strip() or val.lower() in ('none', 'null', 'undefined')):
+                return True
+            return False
+
+        ai_priority = priority if not is_empty(priority) else (
+            "High" if avg_count >= 50 else ("Medium" if avg_count >= 15 else "Low")
+        )
+        
+        if is_empty(requires_road_closure):
+            ai_closure = True if avg_count >= 80 else False
+        else:
+            if isinstance(requires_road_closure, str):
+                ai_closure = requires_road_closure.lower() == 'true'
+            else:
+                ai_closure = bool(requires_road_closure)
+
+        ai_congestion = base_congestion if not is_empty(base_congestion) else (
+            "High" if avg_count >= 50 else ("Medium" if avg_count >= 15 else "Low")
+        )
+
+        # Find or auto-create event so video analysis always triggers dispatch
+        event = db.query(models.Event).filter(models.Event.event_id == event_id).first()
+        if not event:
+            import datetime as _dt
+            event = models.Event(
+                event_id=event_id,
+                event_type="Crowd Gathering",
+                event_cause="CCTV Video Upload",
+                priority=ai_priority,
+                requires_road_closure=ai_closure,
+                hour=_dt.datetime.now().hour,
+                day_of_week=_dt.datetime.now().weekday(),
+                duration_hours=1.0,
+                zone="Central",
+                junction="Camera Feed",
+                latitude=12.9716,
+                longitude=77.5946,
+                description=f"Auto-created from crowd video analysis at {_dt.datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                status="active"
+            )
+            db.add(event)
+            db.commit()
+            db.refresh(event)
+
         # Get resource recommendations based on average headcount
         resources = crowd_service.update_resources(
-            base_congestion, avg_count, priority, requires_road_closure
+            ai_congestion, avg_count, ai_priority, ai_closure
         )
 
         # Log crowd analysis to DB

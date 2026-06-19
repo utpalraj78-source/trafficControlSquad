@@ -4,6 +4,7 @@ import {
   ShieldAlert, LayoutDashboard, Map, Users, Wrench, RefreshCw, 
   HelpCircle, LogOut, Radio, Clock, Siren, Lock, Mail, ChevronRight, Bell, CheckCircle
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { authApi, getWsUrl } from './services/api';
 
 // Pages Import Placeholder
@@ -101,21 +102,27 @@ function Layout({ children, onLogout, user }: { children: React.ReactNode, onLog
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
             return (
-              <Link
+              <motion.div
                 key={item.name}
-                to={item.path}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
-                  isActive
-                    ? 'bg-police-gold text-[#0B132B] font-bold shadow-md shadow-police-gold/25'
-                    : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-100'
-                }`}
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               >
-                <div className="flex items-center space-x-3 min-w-0">
-                  <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#0B132B]' : 'text-slate-400 group-hover:text-slate-100'}`} />
-                  <span className="truncate">{item.name}</span>
-                </div>
-                <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'rotate-90 text-[#0B132B]' : 'opacity-0 group-hover:opacity-100 text-slate-500'}`} />
-              </Link>
+                <Link
+                  to={item.path}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                    isActive
+                      ? 'bg-police-gold text-[#0B132B] font-bold shadow-md shadow-police-gold/25'
+                      : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-[#0B132B]' : 'text-slate-400 group-hover:text-slate-100'}`} />
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                  <ChevronRight className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'rotate-90 text-[#0B132B]' : 'opacity-0 group-hover:opacity-100 text-slate-500'}`} />
+                </Link>
+              </motion.div>
             );
           })}
         </nav>
@@ -380,6 +387,49 @@ function Login({ onLogin }: { onLogin: (user: any) => void }) {
   );
 }
 
+function PageTransition({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function AnimatedRoutes({ user }: { user: any }) {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        {user?.role === 'citizen' ? (
+          <>
+            <Route path="/" element={<PageTransition><CitizenDashboard /></PageTransition>} />
+            <Route path="/about" element={<PageTransition><About /></PageTransition>} />
+            <Route path="*" element={<PageTransition><CitizenDashboard /></PageTransition>} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<PageTransition><Dashboard /></PageTransition>} />
+            <Route path="/heatmap" element={<PageTransition><CongestionHeatmap /></PageTransition>} />
+            <Route path="/crowd" element={<PageTransition><CrowdIntelligence /></PageTransition>} />
+            <Route path="/resources" element={<PageTransition><ResourceAllocation /></PageTransition>} />
+            <Route path="/diversion" element={<PageTransition><DiversionRecommendation /></PageTransition>} />
+            <Route path="/alerts" element={<PageTransition><PoliceAlerts /></PageTransition>} />
+            <Route path="/timeline" element={<PageTransition><TimelineReplay /></PageTransition>} />
+            <Route path="/feedback" element={<PageTransition><FeedbackCenter /></PageTransition>} />
+            <Route path="/incidents" element={<PageTransition><IncidentCenter /></PageTransition>} />
+            <Route path="/about" element={<PageTransition><About /></PageTransition>} />
+          </>
+        )}
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [initFinished, setInitFinished] = useState(false);
@@ -421,28 +471,7 @@ export default function App() {
   return (
     <Router>
       <Layout onLogout={handleLogout} user={user}>
-        <Routes>
-          {user?.role === 'citizen' ? (
-            <>
-              <Route path="/" element={<CitizenDashboard />} />
-              <Route path="/about" element={<About />} />
-              <Route path="*" element={<CitizenDashboard />} />
-            </>
-          ) : (
-            <>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/heatmap" element={<CongestionHeatmap />} />
-              <Route path="/crowd" element={<CrowdIntelligence />} />
-              <Route path="/resources" element={<ResourceAllocation />} />
-              <Route path="/diversion" element={<DiversionRecommendation />} />
-              <Route path="/alerts" element={<PoliceAlerts />} />
-              <Route path="/timeline" element={<TimelineReplay />} />
-              <Route path="/feedback" element={<FeedbackCenter />} />
-              <Route path="/incidents" element={<IncidentCenter />} />
-              <Route path="/about" element={<About />} />
-            </>
-          )}
-        </Routes>
+        <AnimatedRoutes user={user} />
       </Layout>
     </Router>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { trafficApi, authApi } from '../services/api';
 import { Radio, RefreshCw, Send, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function FeedbackCenter() {
   const [eventId, setEventId] = useState('EV-2026-001');
@@ -223,13 +224,15 @@ export default function FeedbackCenter() {
               </div>
               
               <div className="w-full h-2 bg-slate-950 border border-slate-900 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(100, (feedbackCount / 10) * 100)}%` }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className={`h-full rounded-full ${
                     feedbackCount >= 10 
                       ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_8px_#10b981]' 
                       : 'bg-gradient-to-r from-police-gold to-amber-500 shadow-[0_0_6px_#dcba55]'
                   }`}
-                  style={{ width: `${Math.min(100, (feedbackCount / 10) * 100)}%` }}
                 />
               </div>
               
@@ -266,8 +269,13 @@ export default function FeedbackCenter() {
             )}
 
             {retrainResult && (
-              <div className="space-y-6 animate-fade-in border-t border-slate-800 pt-5">
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-center space-x-2.5 text-emerald-400 text-xs font-bold shadow-lg shadow-emerald-500/5">
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-6 border-t border-slate-800 pt-5 overflow-hidden"
+              >
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-center space-x-2.5 text-emerald-400 text-xs font-bold shadow-lg shadow-emerald-500/5 animate-shimmer">
                   <ShieldCheck className="w-5 h-5" />
                   <span>Calibration finished. Model weights updated.</span>
                 </div>
@@ -299,9 +307,11 @@ export default function FeedbackCenter() {
                           <span>{(retrainResult.old_accuracy * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
-                          <div 
-                            className="h-full bg-red-500/80 rounded-full transition-all duration-500"
-                            style={{ width: `${retrainResult.old_accuracy * 100}%` }}
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${retrainResult.old_accuracy * 100}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-red-500/80 rounded-full"
                           />
                         </div>
                       </div>
@@ -312,9 +322,11 @@ export default function FeedbackCenter() {
                           <span className="text-emerald-400">{(retrainResult.new_accuracy * 100).toFixed(0)}%</span>
                         </div>
                         <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-850 shadow-[0_0_8px_rgba(16,185,129,0.1)]">
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full animate-pulse transition-all duration-500"
-                            style={{ width: `${retrainResult.new_accuracy * 100}%` }}
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${retrainResult.new_accuracy * 100}%` }}
+                            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                            className="h-full bg-emerald-500 rounded-full"
                           />
                         </div>
                       </div>
@@ -338,9 +350,11 @@ export default function FeedbackCenter() {
                           <span>{retrainResult.old_mae} mins</span>
                         </div>
                         <div className="w-full h-2 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
-                          <div 
-                            className="h-full bg-red-500/80 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, (retrainResult.old_mae / 30) * 100)}%` }}
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(100, (retrainResult.old_mae / 30) * 100)}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-red-500/80 rounded-full"
                           />
                         </div>
                       </div>
@@ -351,16 +365,18 @@ export default function FeedbackCenter() {
                           <span className="text-emerald-400">{retrainResult.new_mae} mins</span>
                         </div>
                         <div className="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-850">
-                          <div 
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, (retrainResult.new_mae / 30) * 100)}%` }}
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(100, (retrainResult.new_mae / 30) * 100)}%` }}
+                            transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                            className="h-full bg-emerald-500 rounded-full"
                           />
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

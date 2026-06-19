@@ -124,6 +124,7 @@ function SparklineChart({ data, width = 400, height = 80 }: { data: number[], wi
 export default function CrowdIntelligence() {
   const [mode, setMode] = useState<AnalysisMode>('image');
   const [eventId, setEventId] = useState('EV-2026-001');
+  const [aiManaged, setAiManaged] = useState(true);
   const [baseCongestion, setBaseCongestion] = useState('Medium');
   const [priority, setPriority] = useState('High');
   const [closure, setClosure] = useState(true);
@@ -531,9 +532,9 @@ export default function CrowdIntelligence() {
           
           const payload = {
             event_id: eventId,
-            base_congestion: baseCongestion,
-            priority: priority,
-            requires_road_closure: closure,
+            base_congestion: aiManaged ? '' : baseCongestion,
+            priority: aiManaged ? '' : priority,
+            requires_road_closure: aiManaged ? undefined : closure,
             file: file
           };
           
@@ -561,9 +562,9 @@ export default function CrowdIntelligence() {
     try {
       const payload = {
         event_id: eventId,
-        base_congestion: baseCongestion,
-        priority: priority,
-        requires_road_closure: closure,
+        base_congestion: aiManaged ? '' : baseCongestion,
+        priority: aiManaged ? '' : priority,
+        requires_road_closure: aiManaged ? undefined : closure,
         file: selectedFile
       };
       
@@ -656,7 +657,11 @@ export default function CrowdIntelligence() {
       () => {
         setVideoStream(prev => ({ ...prev, isStreaming: false }));
         setLoading(false);
-      }
+      },
+      undefined,
+      aiManaged ? '' : baseCongestion,
+      aiManaged ? '' : priority,
+      aiManaged ? undefined : closure
     );
 
     wsRef.current = socket;
@@ -674,7 +679,7 @@ export default function CrowdIntelligence() {
     } else {
       socket.onopen = sendVideoFile;
     }
-  }, [videoFile]);
+  }, [videoFile, aiManaged, baseCongestion, priority, closure]);
 
   const progressPct = videoStream.totalFrames > 0
     ? Math.round((videoStream.frameIdx / videoStream.totalFrames) * 100)
@@ -869,14 +874,37 @@ export default function CrowdIntelligence() {
                 />
               </div>
 
+              {/* AI-Managed Toggle */}
+              <div className="bg-[#0f1934]/60 border border-slate-800 rounded-lg p-3 flex items-center justify-between transition-all duration-300">
+                <div className="space-y-0.5">
+                  <span className="block text-xs font-bold text-slate-200 uppercase tracking-wide">AI-Managed Mode</span>
+                  <span className="block text-[9px] text-slate-400">Operator-free parameters calibration</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiManaged(!aiManaged)}
+                  className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-300 focus:outline-none ${
+                    aiManaged ? 'bg-police-gold' : 'bg-slate-800'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-full bg-slate-950 shadow-md transform transition-transform duration-300 ${
+                      aiManaged ? 'translate-x-6' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Base Congestion</label>
                   <select 
-                    value={baseCongestion}
+                    value={aiManaged ? 'AI Calibrated' : baseCongestion}
                     onChange={(e) => setBaseCongestion(e.target.value)}
-                    className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none"
+                    disabled={aiManaged}
+                    className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   >
+                    {aiManaged && <option value="AI Calibrated">AI Calibrated</option>}
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
@@ -886,10 +914,12 @@ export default function CrowdIntelligence() {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Priority</label>
                   <select 
-                    value={priority}
+                    value={aiManaged ? 'AI Calibrated' : priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none"
+                    disabled={aiManaged}
+                    className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   >
+                    {aiManaged && <option value="AI Calibrated">AI Calibrated</option>}
                     <option value="High">High</option>
                     <option value="Medium">Medium</option>
                     <option value="Low">Low</option>
@@ -900,10 +930,12 @@ export default function CrowdIntelligence() {
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Requires Closure</label>
                 <select 
-                  value={String(closure)}
+                  value={aiManaged ? 'AI Calibrated' : String(closure)}
                   onChange={(e) => setClosure(e.target.value === 'true')}
-                  className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none"
+                  disabled={aiManaged}
+                  className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                 >
+                  {aiManaged && <option value="AI Calibrated">AI Calibrated</option>}
                   <option value="true">Yes</option>
                   <option value="false">No</option>
                 </select>

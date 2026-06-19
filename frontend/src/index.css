@@ -146,3 +146,48 @@
   position: absolute;
   animation: radarSweep 4s ease-in-out infinite;
 }
+
+/* Shimmer load states */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.2) 25%, rgba(58, 80, 107, 0.4) 50%, rgba(30, 41, 59, 0.2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* Radar beacon pulsation */
+@keyframes radar-pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(91, 192, 190, 0.45); }
+  70% { transform: scale(1.03); box-shadow: 0 0 0 12px rgba(91, 192, 190, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(91, 192, 190, 0); }
+}
+
+.radar-beacon {
+  animation: radar-pulse 2s infinite cubic-bezier(0.25, 0, 0, 1);
+}
+
+/* Premium glows and interactions */
+.hover-glow-blue:hover {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.hover-glow-gold:hover {
+  box-shadow: 0 0 20px rgba(220, 186, 85, 0.4);
+  border-color: rgba(220, 186, 85, 0.35);
+}
+
+.hover-glow-red:hover {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.hover-glow-green:hover {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+

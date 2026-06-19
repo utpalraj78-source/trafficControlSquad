@@ -2,6 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { trafficApi, getWsUrl } from '../services/api';
 import { LayoutDashboard, ShieldAlert, Users, Clock, Siren, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
+
+const tableBodyVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.04
+    }
+  }
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }
+};
 
 export default function Dashboard() {
   const [timelineEvents, setTimelineEvents] = useState<any[]>([]);
@@ -64,10 +95,10 @@ export default function Dashboard() {
   const policeDeployed = timelineEvents.reduce((acc, curr) => acc + curr.police_deployed, 0);
 
   const stats = [
-    { name: 'Total Incidents Logged', value: totalIncidents, desc: 'Current active junctions monitor', icon: LayoutDashboard, border: 'border-l-blue-500' },
-    { name: 'Critical Gridlocks', value: highSeverityCount, desc: 'High-severity zones active', icon: ShieldAlert, border: 'border-l-red-500', color: 'text-police-red' },
-    { name: 'Average Delay Time', value: `${averageDelay} mins`, desc: 'Average queue wait duration', icon: Clock, border: 'border-l-amber-500' },
-    { name: 'Police Mobilized', value: `${policeDeployed} officers`, desc: 'Active dispatch forces count', icon: Siren, border: 'border-l-emerald-500' }
+    { name: 'Total Incidents Logged', value: totalIncidents, desc: 'Current active junctions monitor', icon: LayoutDashboard, border: 'border-l-blue-500', hoverGlow: 'hover-glow-blue' },
+    { name: 'Critical Gridlocks', value: highSeverityCount, desc: 'High-severity zones active', icon: ShieldAlert, border: 'border-l-red-500', color: 'text-police-red', hoverGlow: 'hover-glow-red' },
+    { name: 'Average Delay Time', value: `${averageDelay} mins`, desc: 'Average queue wait duration', icon: Clock, border: 'border-l-amber-500', hoverGlow: 'hover-glow-gold' },
+    { name: 'Police Mobilized', value: `${policeDeployed} officers`, desc: 'Active dispatch forces count', icon: Siren, border: 'border-l-emerald-500', hoverGlow: 'hover-glow-green' }
   ];
 
   return (
@@ -79,11 +110,21 @@ export default function Dashboard() {
       </div>
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+      >
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.name} className={`glass-panel border-l-4 ${stat.border} p-6 rounded-xl flex items-center justify-between`}>
+            <motion.div 
+              variants={itemVariants}
+              whileHover={{ y: -4 }}
+              key={stat.name} 
+              className={`glass-panel border-l-4 ${stat.border} p-6 rounded-xl flex items-center justify-between ${stat.hoverGlow} transition-all duration-200 cursor-pointer`}
+            >
               <div>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5">{stat.name}</p>
                 <h3 className={`text-3xl font-extrabold tracking-tight ${stat.color || 'text-slate-100'}`}>{stat.value}</h3>
@@ -92,10 +133,10 @@ export default function Dashboard() {
               <div className="p-3 bg-slate-800/50 rounded-lg text-slate-400 border border-slate-700/30">
                 <Icon className="w-5 h-5 text-slate-300" />
               </div>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Layout panels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -103,7 +144,7 @@ export default function Dashboard() {
         <div className="lg:col-span-2 glass-panel p-6 rounded-xl border border-slate-800 space-y-6">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <h3 className="font-extrabold text-lg text-slate-100 uppercase tracking-tight">Active Incident Feeds</h3>
-            <span className="px-2.5 py-1 bg-police-gold/10 border border-police-gold/30 rounded text-[10px] text-police-gold font-bold uppercase">LIVE FEED</span>
+            <span className="px-2.5 py-1 bg-police-gold/10 border border-police-gold/30 rounded text-[10px] text-police-gold font-bold uppercase siren-glow">LIVE FEED</span>
           </div>
 
           {loading ? (
@@ -121,9 +162,18 @@ export default function Dashboard() {
                     <th className="pb-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-sm">
+                <motion.tbody 
+                  variants={tableBodyVariants}
+                  initial="hidden"
+                  animate="show"
+                  className="divide-y divide-slate-800/60 text-sm"
+                >
                   {timelineEvents.map((ev) => (
-                    <tr key={ev.event_id} className="hover:bg-slate-800/20 transition-colors duration-150">
+                    <motion.tr 
+                      variants={rowVariants}
+                      key={ev.event_id} 
+                      className="hover:bg-slate-800/20 transition-colors duration-150"
+                    >
                       <td className="py-3.5 font-mono text-xs font-bold text-slate-400">{ev.event_id}</td>
                       <td className="py-3.5 text-slate-100 font-semibold">{ev.junction}</td>
                       <td className="py-3.5">
@@ -148,9 +198,9 @@ export default function Dashboard() {
                           <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           )}
@@ -160,15 +210,15 @@ export default function Dashboard() {
         <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-6">
           <h3 className="font-extrabold text-lg text-slate-100 uppercase tracking-tight border-b border-slate-800 pb-4">Tactical Response Protocol</h3>
           <div className="space-y-4">
-            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg">
+            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg hover-glow-gold transition-all duration-200 cursor-pointer">
               <h4 className="font-bold text-xs text-police-gold uppercase tracking-wider mb-1">Level 3 Gridlock Protocol</h4>
               <p className="text-xs text-slate-400">For "High" severity events, deploy a minimum of 8 personnel and set up cordons upstream. Adjust signals immediately.</p>
             </div>
-            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg">
+            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg hover-glow-red transition-all duration-200 cursor-pointer">
               <h4 className="font-bold text-xs text-police-red uppercase tracking-wider mb-1">Emergency Corridor Command</h4>
               <p className="text-xs text-slate-400">Prioritize corridors holding ambulances. Reroute surrounding flow to auxiliary collector loops.</p>
             </div>
-            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg">
+            <div className="p-4 bg-slate-800/30 border border-slate-700/30 rounded-lg hover-glow-green transition-all duration-200 cursor-pointer">
               <h4 className="font-bold text-xs text-emerald-400 uppercase tracking-wider mb-1">Closed-Loop retrain guidelines</h4>
               <p className="text-xs text-slate-400">Execute ML retraining at the Retraining Center weekly, ensuring model accuracy stays above 90%.</p>
             </div>

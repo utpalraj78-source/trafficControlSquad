@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { trafficApi } from '../services/api';
 import { MapPin, Camera, AlertCircle, CheckCircle, RefreshCw, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // SVG marker for citizen exact location
 const citizenIcon = new L.DivIcon({
@@ -16,6 +17,21 @@ const citizenIcon = new L.DivIcon({
   iconSize: [32, 32],
   iconAnchor: [16, 16],
 });
+
+const tableBodyVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const rowVariants = {
+  hidden: { opacity: 0, x: -10 },
+  show: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 300, damping: 25 } }
+};
 
 export default function CitizenDashboard() {
   const [file, setFile] = useState<File | null>(null);
@@ -129,42 +145,68 @@ export default function CitizenDashboard() {
               <span>Report Incident</span>
             </h3>
 
-            {success && (
-              <div className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-lg flex items-center space-x-3 text-emerald-400 text-xs font-semibold animate-pulse">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <span>Report successfully submitted! The AI Command Center has been notified. Thank you for keeping Bengaluru safe!</span>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {success && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="p-4 bg-emerald-950/20 border border-emerald-500/30 rounded-lg flex items-center space-x-3 text-emerald-400 text-xs font-semibold"
+                >
+                  <CheckCircle className="w-5 h-5 flex-shrink-0 animate-bounce" />
+                  <span>Report successfully submitted! The AI Command Center has been notified. Thank you for keeping Bengaluru safe!</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {error && (
-              <div className="p-4 bg-red-950/20 border border-red-500/30 rounded-lg flex items-center space-x-3 text-red-400 text-xs font-semibold">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  className="p-4 bg-red-950/20 border border-red-500/30 rounded-lg flex items-center space-x-3 text-red-400 text-xs font-semibold"
+                >
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Geolocation Lock */}
             <div className="space-y-2">
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Exact Geolocation Lock (Required)</label>
               
               <div className="grid grid-cols-2 gap-3 mb-2">
-                <div className="bg-[#050B14] border border-slate-800 p-2.5 rounded text-xs select-none">
+                <motion.div 
+                  animate={latitude !== null ? { scale: [1, 1.02, 1] } : {}}
+                  className={`border p-2.5 rounded text-xs select-none transition-colors duration-300 ${latitude !== null ? 'bg-emerald-950/10 border-emerald-500/30' : 'bg-[#050B14] border-slate-800'}`}
+                >
                   <span className="block text-[8px] font-bold text-slate-500 uppercase">Latitude</span>
-                  <span className="font-mono text-slate-300 font-semibold">{latitude !== null ? latitude.toFixed(6) : "Not shared"}</span>
-                </div>
-                <div className="bg-[#050B14] border border-slate-800 p-2.5 rounded text-xs select-none">
+                  <span className={`font-mono font-semibold ${latitude !== null ? 'text-emerald-400' : 'text-slate-300'}`}>
+                    {latitude !== null ? latitude.toFixed(6) : "Not shared"}
+                  </span>
+                </motion.div>
+                <motion.div 
+                  animate={longitude !== null ? { scale: [1, 1.02, 1] } : {}}
+                  className={`border p-2.5 rounded text-xs select-none transition-colors duration-300 ${longitude !== null ? 'bg-emerald-950/10 border-emerald-500/30' : 'bg-[#050B14] border-slate-800'}`}
+                >
                   <span className="block text-[8px] font-bold text-slate-500 uppercase">Longitude</span>
-                  <span className="font-mono text-slate-300 font-semibold">{longitude !== null ? longitude.toFixed(6) : "Not shared"}</span>
-                </div>
+                  <span className={`font-mono font-semibold ${longitude !== null ? 'text-emerald-400' : 'text-slate-300'}`}>
+                    {longitude !== null ? longitude.toFixed(6) : "Not shared"}
+                  </span>
+                </motion.div>
               </div>
 
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
                 onClick={handleShareLocation}
                 disabled={locating}
                 className={`w-full py-2.5 text-xs font-bold uppercase rounded-lg border transition-all duration-200 flex items-center justify-center space-x-2 ${
                   latitude !== null 
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 radar-beacon' 
                     : 'bg-[#0B132B] hover:bg-slate-800 border-slate-800 text-slate-200'
                 }`}
               >
@@ -179,7 +221,7 @@ export default function CitizenDashboard() {
                     <span>{latitude !== null ? "📍 GPS Location Locked" : "📍 Share Current Location"}</span>
                   </>
                 )}
-              </button>
+              </motion.button>
             </div>
 
             {/* Image upload */}
@@ -194,22 +236,35 @@ export default function CitizenDashboard() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 />
                 
-                {previewUrl ? (
-                  <div className="space-y-3">
-                    <img 
-                      src={previewUrl} 
-                      alt="Preview" 
-                      className="max-h-40 rounded border border-slate-800 object-cover shadow"
-                    />
-                    <p className="text-[10px] text-slate-400 font-mono truncate max-w-xs">{file?.name}</p>
-                  </div>
-                ) : (
-                  <>
-                    <Camera className="w-8 h-8 text-slate-500 mb-2.5 group-hover:text-police-gold transition-colors duration-200" />
-                    <span className="text-xs font-semibold text-slate-400">Click or Drag Image here</span>
-                    <span className="text-[9px] text-slate-500 mt-1 uppercase">Supports JPEG, PNG</span>
-                  </>
-                )}
+                <AnimatePresence mode="wait">
+                  {previewUrl ? (
+                    <motion.div 
+                      key="preview"
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="space-y-3"
+                    >
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview" 
+                        className="max-h-40 rounded border border-slate-800 object-cover shadow hover-glow-gold transition-all duration-200"
+                      />
+                      <p className="text-[10px] text-slate-400 font-mono truncate max-w-xs">{file?.name}</p>
+                    </motion.div>
+                  ) : (
+                    <motion.div 
+                      key="uploader"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <Camera className="w-8 h-8 text-slate-500 mb-2.5 group-hover:text-police-gold transition-colors duration-200" />
+                      <p className="text-xs font-semibold text-slate-400">Click or Drag Image here</p>
+                      <span className="text-[9px] text-slate-500 mt-1 uppercase">Supports JPEG, PNG</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -221,13 +276,15 @@ export default function CitizenDashboard() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="E.g., extreme water logging blocking two lanes..."
                 rows={3}
-                className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none resize-none"
+                className="w-full bg-[#0B132B] border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none resize-none focus:border-police-gold/50 transition-colors duration-250"
               />
             </div>
 
             {/* Submit */}
-            <button
+            <motion.button
               type="submit"
+              whileHover={!(submitting || !file || latitude === null) ? { scale: 1.01 } : {}}
+              whileTap={!(submitting || !file || latitude === null) ? { scale: 0.99 } : {}}
               disabled={submitting || !file || latitude === null}
               className="w-full py-3.5 bg-police-gold hover:bg-police-gold/90 disabled:opacity-40 disabled:hover:bg-police-gold text-[#0B132B] font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-police-gold/5"
             >
@@ -239,7 +296,7 @@ export default function CitizenDashboard() {
                   <span>Submit Incident Report</span>
                 </>
               )}
-            </button>
+            </motion.button>
           </form>
         </div>
 
@@ -302,9 +359,18 @@ export default function CitizenDashboard() {
                       <th className="pb-3">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 text-xs font-semibold text-slate-300">
+                  <motion.tbody 
+                    variants={tableBodyVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="divide-y divide-slate-800/60 text-xs font-semibold text-slate-300"
+                  >
                     {reports.map((rep) => (
-                      <tr key={rep.event_id} className="hover:bg-slate-800/10">
+                      <motion.tr 
+                        variants={rowVariants}
+                        key={rep.event_id} 
+                        className="hover:bg-slate-800/10"
+                      >
                         <td className="py-3 font-mono text-[10px] text-slate-400">{rep.event_id}</td>
                         <td className="py-3 text-slate-200">{rep.junction}</td>
                         <td className="py-3 text-slate-400 font-mono text-[10px]">{rep.latitude.toFixed(4)}, {rep.longitude.toFixed(4)}</td>
@@ -318,9 +384,9 @@ export default function CitizenDashboard() {
                             {rep.status === 'cleared' ? 'Resolved' : 'Active'}
                           </span>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))}
-                  </tbody>
+                  </motion.tbody>
                 </table>
               </div>
             )}

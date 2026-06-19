@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trafficApi } from '../services/api';
 import { Siren, Phone, ShieldCheck, Mail, MapPin, Send, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const junctionCoords: { [key: string]: [number, number] } = {
   'SilkBoardJunc': [12.9176, 77.6246],
@@ -141,65 +142,82 @@ export default function PoliceAlerts() {
 
         {/* Right Side: Proximity Find Result and SMS logger */}
         <div className="lg:col-span-2 space-y-6">
-          {nearestStation && (
-            <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-5 animate-slide-up shadow-xl hover-scale-premium delay-100">
-              <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3">Nearest Resolved Station</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-900/40 p-4 rounded border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Station Name</span>
-                    <span className="text-sm font-extrabold text-slate-200">{nearestStation.station_name}</span>
+          <AnimatePresence>
+            {nearestStation && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                className="glass-panel p-6 rounded-xl border border-slate-800 space-y-5 shadow-xl hover-scale-premium hover-glow-blue transition-all duration-200"
+              >
+                <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3">Nearest Resolved Station</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-900/40 p-4 rounded border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Station Name</span>
+                      <span className="text-sm font-extrabold text-slate-200">{nearestStation.station_name}</span>
+                    </div>
+                    <MapPin className="w-5 h-5 text-police-gold opacity-55" />
                   </div>
-                  <MapPin className="w-5 h-5 text-police-gold opacity-55" />
-                </div>
 
-                <div className="bg-slate-900/40 p-4 rounded border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Geodesic Proximity</span>
-                    <span className="text-sm font-extrabold text-slate-200">{nearestStation.distance_km.toFixed(2)} km (ETA {nearestStation.eta_minutes} mins)</span>
+                  <div className="bg-slate-900/40 p-4 rounded border border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Geodesic Proximity</span>
+                      <span className="text-sm font-extrabold text-slate-200">{nearestStation.distance_km.toFixed(2)} km (ETA {nearestStation.eta_minutes} mins)</span>
+                    </div>
+                    <Phone className="w-5 h-5 text-police-light opacity-55" />
                   </div>
-                  <Phone className="w-5 h-5 text-police-light opacity-55" />
                 </div>
-              </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-slate-900/40 p-4 rounded border border-slate-800">
-                <div>
-                  <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contact Details / Dispatch Number</span>
-                  <span className="text-sm font-extrabold text-slate-200">{nearestStation.phone}</span>
+                <div className="flex flex-col sm:flex-row gap-3 justify-between sm:items-center bg-slate-900/40 p-4 rounded border border-slate-800">
+                  <div>
+                    <span className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Contact Details / Dispatch Number</span>
+                    <span className="text-sm font-extrabold text-slate-200">{nearestStation.phone}</span>
+                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDispatch}
+                    disabled={loadingSend}
+                    className="px-5 py-2.5 bg-police-gold hover:bg-police-gold/90 text-[#0B132B] font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-lg shadow-police-gold/10 w-full sm:w-auto flex-shrink-0"
+                  >
+                    {loadingSend ? <RefreshCw className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Transmit SMS Dispatch</span>
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-                <button
-                  onClick={handleDispatch}
-                  disabled={loadingSend}
-                  className="px-5 py-2.5 bg-police-gold hover:bg-police-gold/90 text-[#0B132B] font-bold text-xs uppercase tracking-wider rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-lg shadow-police-gold/10 w-full sm:w-auto flex-shrink-0"
-                >
-                  {loadingSend ? <RefreshCw className="w-4 h-4 animate-spin" /> : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Transmit SMS Dispatch</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* SMS Dispatch log */}
-          {dispatchResult && (
-            <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-4 animate-slide-up shadow-xl hover-scale-premium delay-150">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300">Twilio Gateway Log</h3>
-                <span className="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-[9px] text-emerald-400 font-bold uppercase">SMS TRANSMITTED</span>
-              </div>
+          <AnimatePresence>
+            {dispatchResult && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+                className="glass-panel p-6 rounded-xl border border-slate-800 space-y-4 shadow-xl hover-scale-premium hover-glow-green transition-all duration-200"
+              >
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <h3 className="font-extrabold text-sm uppercase tracking-wider text-slate-300">Twilio Gateway Log</h3>
+                  <span className="px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/30 rounded text-[9px] text-emerald-400 font-bold uppercase animate-pulse">SMS TRANSMITTED</span>
+                </div>
 
-              <div className="bg-slate-950 p-4 rounded-lg font-mono text-[11px] text-slate-300 border border-slate-900 space-y-2 max-h-[160px] overflow-y-auto">
-                <p className="text-slate-500">// Message ID: {dispatchResult.id}</p>
-                <p className="text-slate-500">// Timestamp: {dispatchResult.timestamp}</p>
-                <p className="text-slate-500">// Recipient: {dispatchResult.recipient_phone}</p>
-                <p className="text-slate-200 mt-2">{dispatchResult.payload}</p>
-              </div>
-            </div>
-          )}
+                <div className="bg-slate-950 p-4 rounded-lg font-mono text-[11px] text-slate-300 border border-slate-900 space-y-2 max-h-[160px] overflow-y-auto shadow-inner">
+                  <p className="text-slate-500">// Message ID: {dispatchResult.id}</p>
+                  <p className="text-slate-500">// Timestamp: {dispatchResult.timestamp}</p>
+                  <p className="text-slate-500">// Recipient: {dispatchResult.recipient_phone}</p>
+                  <p className="text-slate-200 mt-2">{dispatchResult.payload}</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
